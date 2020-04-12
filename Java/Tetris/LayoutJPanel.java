@@ -20,8 +20,8 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   private Random random = new Random(); 
   private int newShape = 1;
   
-  //Tetris board: 10 x 20
-  private int arr[][] = new int[10][20];
+  //Tetris board: 10 x 22
+  private int arr[][] = new int[10][22];
 
   
   public void paintComponent( Graphics g)
@@ -60,16 +60,16 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
           newShape = 0;
         }
         
-        g2d.fillRect(x, y, 60, 60);
+        g2d.fillRect(x, y - 60, 60, 60);
         
         //coordinate testing
-//        System.out.println("x value is:" + x);
-//        System.out.println("y value is:" + y);
-//        System.out.println();
+        //System.out.println("x value is:" + x);
+        //System.out.println("y value is:" + y);
+        //System.out.println();
         
         
     //specific to the 4x4 square block piece that detects collision    
-    if(y + 60 == 600 
+    if(y  == 600 
     || arr[(x) / 30][(y + 60) / 30] == 1
     || arr[(x + 30) / 30][(y + 60) / 30] == 1)
     {
@@ -92,11 +92,11 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
      //Checks tetris board for all block locations and fills them
     for(int i = 0; i < 10; i++)
     {
-      for(int j = 0; j < 20; j++)
+      for(int j = 0; j < 22; j++)
       {
         if(arr[i][j] == 1)
         {
-          g2d.fillRect(i * 30, j * 30, 30, 30);
+          g2d.fillRect((i * 30), (j * 30) - 60, 30, 30);
         }
       }
     }
@@ -107,7 +107,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   
   public void printBoard()
   {
-    for(int i = 0; i < 20; i++)
+    for(int i = 0; i < 22; i++)
     {
     System.out.println();
       for(int j = 0; j < 10; j++)
