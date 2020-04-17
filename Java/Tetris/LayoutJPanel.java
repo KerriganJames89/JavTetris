@@ -8,6 +8,7 @@ import java.awt.Component;
 import java.awt.event.*;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.lang.Math;
 
 public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
 
@@ -17,7 +18,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   private Random random = new Random(); 
   
   //Default game speed; as the player progresses, the speed at which the shapes fall increases
-  private Timer t = new Timer(500, this);
+  private Timer t = new Timer(250, this);
   
   //Throttles the speed at which players can move the shapes
   private long timePrevious = 0;
@@ -25,8 +26,8 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   private long timeCheck = 0;
   
   //Picks a shape at random and draws it every cycle till placed
-  private int shapeType = random.nextInt(2);
-  //private int shapeType = 0;
+  private int shapeType = random.nextInt(7);
+  //private int shapeType = 6;
   
   //Indicator that helps reset the coordinates for newly made shapes
   private boolean shapeSpawn = true;
@@ -37,14 +38,20 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   //GracePeriod gives the player time to move their shape when ontop of another shape
   private int gracePeriod = 1;
   
-  //Tetris board: 10 x 22; only 10 x 20 is drawn on the panel since shapes are created outside of player vision
+  //Prevents using key events between shape creation - 
+  //shouldn't really need, but I was getting OOB exceptions by smashing my fist onto the arrow keys
+  private int shapeDelay = 0;
+  
+  //Tetris board: 10 x 22; only 10 x 20 is drawn on the panel since shapes are created above player vision
   private int arr[][] = new int[10][22];
   
-  private Color[] shapeColors = new Color[] {Color.BLACK, Color.RED, Color.BLUE}; 
+  private Color[] shapeColors = new Color[] {Color.WHITE, new Color(255, 136, 17), Color.WHITE, 
+  new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)}; 
 
   
   public void paintComponent( Graphics g)
   {
+    setBackground(Color.GRAY);
     double velX = 2, velY = 2;
     
     double width = getWidth();
@@ -76,8 +83,25 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
     //Draws current shapes to the JPanel and updates them every cycle
     drawShape(g2d);
     
-    //Draws previous shapes to the JPanel by accessing the stored board array data
-    drawPrevious(g2d);
+    //Restores key events for player when shape is in play
+    if(shapeDelay == 0)
+    {
+      shapeDelay = 1;
+    }
+    
+    //Checks tetris board for all block locations and fills them
+    for(int i = 0; i < 10; i++)
+    {
+      for(int j = 0; j < 22; j++)
+      {
+        if(arr[i][j] != 0)
+        {
+          
+          g2d.setColor(shapeColors[(arr[i][j])]);
+          g2d.fillRect((i * 30) + 1, (j * 30) - 59, 29, 29);
+        }
+      }
+    }
       
     
   //coordinate testing
@@ -101,138 +125,51 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
     }
     System.out.println();
   }
-  
-  //Draws current shapes to the JPanel and updates them every cycle
-  public void drawShape(Graphics2D g2d)
-  {
-    switch(shapeType) 
-    {
-      case 0 :
-          
-          g2d.setColor(Color.RED);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
-          
-          g2d.fillRect(x + 1, y - 59, 29, 29);
-          g2d.fillRect(x + 1, y - 29, 29, 29);
-          g2d.fillRect(x + 31, y - 59, 29, 29);
-          g2d.fillRect(x + 31, y - 29, 29, 29);
-          break;
-
-          
-      case 1 :
-          
-          g2d.setColor(Color.BLUE);
-          
-          if(shapeSpawn == true)
-          {
-            x = 90;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
-          
-          switch(shapeTransform)
-          {
-            case "DEFAULT":
-            
-              g2d.fillRect(x + 1, y - 29, 29, 29);
-              g2d.fillRect(x + 31, y - 29, 29, 29);
-              g2d.fillRect(x + 61, y - 29, 29, 29);
-              g2d.fillRect(x + 91, y - 29, 29, 29);
-              break;
-              
-            case "a":
-            
-              g2d.fillRect(x + 1, y - 29, 29, 29);
-              g2d.fillRect(x + 1, y + 1, 29, 29);
-              g2d.fillRect(x + 1, y + 31, 29, 29);
-              g2d.fillRect(x + 1, y + 61, 29, 29);
-              break;
-          }
-          break;
-          
-      case 2 :
-          g2d.setColor(Color.GREEN);
-          g2d.fillRect(x + 1, y - 29, 29, 29);
-          g2d.fillRect(x + 1, y - 59, 29, 29);
-          g2d.fillRect(x + 31, y - 29, 29, 29);
-          g2d.fillRect(x + 31, y - 59, 29, 29);
-          break;
-          
-      case 3 :
-          g2d.setColor(Color.YELLOW);
-          g2d.fillRect(x + 1, y - 29, 29, 29);
-          g2d.fillRect(x + 1, y - 59, 29, 29);
-          g2d.fillRect(x + 31, y - 29, 29, 29);
-          g2d.fillRect(x + 31, y - 59, 29, 29);
-          break;
-          
-      case 4 :
-          g2d.setColor(Color.ORANGE);
-          g2d.fillRect(x + 1, y - 29, 29, 29);
-          g2d.fillRect(x + 1, y - 59, 29, 29);
-          g2d.fillRect(x + 31, y - 29, 29, 29);
-          g2d.fillRect(x + 31, y - 59, 29, 29);
-          break;
-          
-      case 5 :
-          g2d.setColor(Color.BLUE);
-          g2d.fillRect(x + 1, y - 29, 29, 29);
-          g2d.fillRect(x + 1, y - 59, 29, 29);
-          g2d.fillRect(x + 31, y - 29, 29, 29);
-          g2d.fillRect(x + 31, y - 59, 29, 29);
-          break;
-          
-      case 6 :
-          g2d.setColor(Color.RED);
-          g2d.fillRect(x + 1, y - 29, 29, 29);
-          g2d.fillRect(x + 1, y - 59, 29, 29);
-          g2d.fillRect(x + 31, y - 29, 29, 29);
-          g2d.fillRect(x + 31, y - 59, 29, 29);
-          break;
-    }
-  }
-  
-  public void drawPrevious(Graphics2D g2d)
-  {
-    //Checks tetris board for all block locations and fills them
-    for(int i = 0; i < 10; i++)
-    {
-      for(int j = 0; j < 22; j++)
-      {
-        if(arr[i][j] != 0)
-        {
-          
-          g2d.setColor(shapeColors[(arr[i][j])]);
-          g2d.fillRect((i * 30) + 1, (j * 30) - 59, 29, 29);
-        }
-      }
-    }
-  }
  
+ //Action event that triggers through a timer cycle
   public void actionPerformed(ActionEvent e)
   {
     int check = placementCheck();
 
     if(check == 1)
     {
-      x = 0;
-      y = 0;
-      
-      shapeType = random.nextInt(2);
-      //shapeType = 0;
+    
+      //Variable reset for next shape
+      shapeType = random.nextInt(7);
       shapeSpawn = true;
       shapeTransform = "DEFAULT";
-      gracePeriod = 1;
-      System.out.println("Shape type: " + shapeType);
+      gracePeriod = 2;
+      shapeDelay = 0;
       
+      //Coordinate reset for next shape
+      x = 0;
+      y = 0;
+       
+   for(int i = 21; i > 0; i--)
+    {
+      int counter = 0;
+      
+      for(int j = 0; j < 10; j++)
+      {
+        if(arr[j][i] != 0)
+        {
+          counter++;
+        }
+      }
+      
+      if(counter == 10)
+      {
+        for(int j = i; j > 0; j--)
+        {
+          for(int k = 0; k < 10; k++)
+          {
+            arr[k][j] = arr[k][j - 1];
+          }
+        }
+        i++;
+      }
+    }
+
       
       
       //print test
@@ -250,12 +187,19 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
     }
   }
   
+  //Key events; players primarily use the arrow keys to adjust the shapes
   public void keyPressed(KeyEvent e)
   {
+    //Pauses event until a shape is created
+    if(shapeDelay == 0)
+    {
+      return;
+    }
+      
       timeCurrent = System.currentTimeMillis();
       timeCheck = timeCurrent - timePrevious;
   
-    if (timeCheck < 0 || timeCheck > 50) 
+    if (timeCheck < 0 || timeCheck > 5) 
     {
       timePrevious = timeCurrent;
       
@@ -267,22 +211,107 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
         switch(shapeType) 
         {
         //first statement checks if shape is near wall; second: checks for collision with other shapes
+        
+          //Square Block
           case 0 :
+          
             if(x != 0 
-              && arr[(x - 30)/30][y/30] == 0
+              && arr[(x - 30)/30][(y + 0)/30] == 0
               && arr[(x - 30)/30][(y + 30)/30] == 0)
               {
                 x -= 30;
               }
               
               break;
-    
+          
+          //Long Block
           case 1 :
               
               switch(shapeTransform)
               {
                 case "DEFAULT" :
+                
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 30)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
                   if(x != 0 
+                  && arr[(x - 30)/30][(y)/30] == 0
+                  && arr[(x - 30)/30][(y + 30) / 30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0
+                  && arr[(x - 30)/30][(y + 90)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+              }
+              break;
+          
+          //T Block
+          case 2 :
+          
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 30 
+                  && arr[(x - 30)/30][(y + 0)/30] == 0
+                  && arr[(x - 60)/30][(y + 30)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 0 
+                  && arr[(x - 30)/30][(y + 0)/30] == 0
+                  && arr[(x - 30)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+                  
+                  break;
+                  
+                  case "b" :
+                  
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+                  
+                  break;
+                  
+                  case "c" :
+                  
+                  if(x != 30 
+                  && arr[(x - 30)/30][(y + 0)/30] == 0
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+              }
+              break;
+              
+          //Z Block
+          case 3 :
+          
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 0)/30] == 0
                   && arr[(x - 30)/30][(y + 30)/30] == 0)
                   {
                     x -= 30;
@@ -291,9 +320,87 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
                   break;
                   
                 case "a" :
+                
                   if(x != 0 
-                  && arr[(x - 30)/30][(y - 30)/30] == 0
-                  && arr[(x - 30)/30][(y)/30] == 0
+                  && arr[(x + 0)/30][(y + 0)/30] == 0
+                  && arr[(x - 30)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+              }
+              break;
+           
+          //S Block   
+          case 4 :
+          
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 0)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 0)/30] == 0
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+              }
+              break;
+              
+          //L Block
+          case 5 :
+    
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x + 0)/30][(y + 0)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 0 
+                  && arr[(x - 30)/30][(y + 0)/30] == 0
+                  && arr[(x - 30)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+                  
+                  break;
+                  
+                  case "b" :
+                  
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x - 60)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+                  
+                  break;
+                  
+                  case "c" :
+                  
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 0)/30] == 0
                   && arr[(x - 30)/30][(y + 30)/30] == 0
                   && arr[(x - 30)/30][(y + 60)/30] == 0)
                   {
@@ -302,24 +409,55 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
               }
               break;
               
-          case 2 :
-    
-              break;
-              
-          case 3 :
-    
-              break;
-              
-          case 4 :
-    
-              break;
-              
-          case 5 :
-    
-              break;
-              
+          //J Block
           case 6 :
-      
+    
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x - 60)/30][(y + 0)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 0 
+                  && arr[(x - 30)/30][(y + 0)/30] == 0
+                  && arr[(x - 30)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+                  
+                  break;
+                  
+                  case "b" :
+                  
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 30)/30] == 0
+                  && arr[(x + 0)/30][(y + 60)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+                  
+                  break;
+                  
+                  case "c" :
+                  
+                  if(x != 30 
+                  && arr[(x - 60)/30][(y + 60)/30] == 0
+                  && arr[(x - 30)/30][(y + 30)/30] == 0
+                  && arr[(x - 30)/30][(y + 0)/30] == 0)
+                  {
+                    x -= 30;
+                  }
+              }
               break;
         }
       }
@@ -330,59 +468,249 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
         {
           //Square block
           case 0 :
+          
             if(x != 240
-            && arr[(x + 60)/30][y/30] == 0
+            && arr[(x + 60)/30][(y + 0)/30] == 0
             && arr[(x + 60)/30][(y + 30)/30] == 0)
             {
               x += 30;
             }
               break;
+              
           //Long block
           case 1 :
+          
                switch(shapeTransform)
                 {
-                //shape size = 120px, so 120px + 180px = 300 (the border)
-                //
                 case "DEFAULT" :
-                  if(x != 180 
-                  && arr[((x + 120)/30)][(y + 30)/30] == 0)
+                
+                  if(x != 210 
+                  && arr[((x + 90)/30)][(y + 30)/30] == 0)
                   {
                     x += 30;
                   }
                   break;
                   
                 case "a" :
+                
                   if(x != 270
+                  && arr[(x + 30)/30][(y + 0)/30] == 0
                   && arr[(x + 30)/30][(y + 30)/30] == 0
                   && arr[(x + 30)/30][(y + 60)/30] == 0
-                  && arr[(x + 30)/30][(y + 90)/30] == 0
-                  && arr[(x + 30)/30][(y + 120)/30] == 0)
+                  && arr[(x + 30)/30][(y + 90)/30] == 0)
                   {
                     x += 30;
                   }
-                  break;
                 }
                 
               break;
               
+           //T Block   
           case 2 :
     
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 240 
+                  && arr[(x + 60)/30][(y + 30)/30] == 0
+                  && arr[(x + 30)/30][(y + 0)/30] == 0)
+                  {
+                    x += 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 240 
+                  && arr[(x + 30)/30][(y + 0)/30] == 0
+                  && arr[(x + 60)/30][(y + 30)/30] == 0
+                  && arr[(x + 30)/30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+                  
+                  break;
+                  
+                  case "b" :
+                  
+                  if(x != 240 
+                  && arr[(x + 60)/30][(y + 30)/30] == 0
+                  && arr[(x + 30)/30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+                  
+                  break;
+                  
+                  case "c" :
+                  
+                  if(x != 270 
+                  && arr[(x + 30)/30][(y + 0)/30] == 0
+                  && arr[(x + 30)/30][(y + 30)/30] == 0
+                  && arr[(x + 30)/30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+              }
               break;
-              
+
+          //Z Block
           case 3 :
-    
+
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 240 
+                  && arr[(x + 30)/30][(y + 0)/30] == 0
+                  && arr[(x + 60)/30][(y + 30)/30] == 0)
+                  {
+                    x += 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 240 
+                  && arr[(x + 60)/ 30][(y + 0)/30] == 0
+                  && arr[(x + 60) / 30][(y + 30)/30] == 0
+                  && arr[(x + 30) / 30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+              }
               break;
-              
+          
+          //S Block
           case 4 :
-    
+          
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 240 
+                  && arr[(x + 30)/30][(y + 30)/30] == 0
+                  && arr[(x + 60)/30][(y + 0)/30] == 0)
+                  {
+                    x += 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 270 
+                  && arr[(x + 0)/30][(y + 0)/30] == 0
+                  && arr[(x + 30)/30][(y + 30)/30] == 0
+                  && arr[(x + 30)/30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+              }
               break;
-              
+          //L Block 
           case 5 :
     
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 240 
+                  && arr[(x + 60)/30][(y + 0)/30] == 0
+                  && arr[(x + 60)/30][(y + 30)/30] == 0)
+                  {
+                    x += 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 240 
+                  && arr[(x + 60)/30][(y + 60)/30] == 0
+                  && arr[(x + 30)/30][(y + 30)/30] == 0
+                  && arr[(x + 30)/30][(y + 0)/30] == 0)
+                  {
+                    x += 30;
+                  }
+                  
+                  break;
+                  
+                  case "b" :
+                  
+                  if(x != 240 
+                  && arr[(x + 60)/30][(y + 30)/30] == 0
+                  && arr[(x + 0)/30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+                  
+                  break;
+                  
+                  case "c" :
+                  
+                  if(x != 270 
+                  && arr[(x + 30) / 30][(y + 0)/30] == 0
+                  && arr[(x + 30) / 30][(y + 30)/30] == 0
+                  && arr[(x + 30) / 30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+              }
               break;
               
+          //J Block
           case 6 :
       
+              switch(shapeTransform)
+              {
+                case "DEFAULT" :
+                
+                  if(x != 240 
+                  && arr[(x + 0)/30][(y + 0)/30] == 0
+                  && arr[(x + 60)/30][(y + 30)/30] == 0)
+                  {
+                    x += 30;
+                  }
+
+                  break;
+                  
+                case "a" :
+                
+                  if(x != 240 
+                  && arr[(x + 60)/30][(y + 0)/30] == 0
+                  && arr[(x + 30)/30][(y + 30)/30] == 0
+                  && arr[(x + 30)/30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+                  
+                  break;
+                  
+                  case "b" :
+                  
+                  if(x != 240 
+                  && arr[(x + 60)/30][(y + 30)/30] == 0
+                  && arr[(x + 60)/30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+                  
+                  break;
+                  
+                  case "c" :
+                  
+                  if(x != 270 
+                  && arr[(x + 30) / 30][(y + 0)/30] == 0
+                  && arr[(x + 30) / 30][(y + 30)/30] == 0
+                  && arr[(x + 30) / 30][(y + 60)/30] == 0)
+                  {
+                    x += 30;
+                  }
+              }
               break;
         }
       }
@@ -398,52 +726,238 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
           
           //Long block
           case 1 :
+          
                 switch(shapeTransform)
                 {
-                case "DEFAULT" :
-                  if(y != 600 && y != 570 & y != 540
-                  && arr[(x + 0)/30][(y + 30)/30] == 0
-                  && arr[(x + 0)/30][(y + 60)/30] == 0
-                  && arr[(x + 0)/30][(y + 90)/30] == 0
-                  && arr[(x + 0)/30][(y + 120)/30] == 0)
-                  {
-                    shapeTransform = "a";
-                  }
+                  case "DEFAULT" :
                   
-                  break;
+                    if(y != 600 && y != 570
+                    && arr[(x + 0)/30][(y + 0)/30] == 0
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 0)/30][(y + 90)/30] == 0)
+                    {
+                      shapeTransform = "a";
+                    }
+                    
+                    break;
+                    
+                  case "a" :
                   
-                case "a" :
-                  if(x != 210 && x != 240 && x != 270 && x != 300 
-                  && arr[(x + 30)/30][(y + 30)/30] == 0
-                  && arr[(x + 60)/30][(y + 30)/30] == 0
-                  && arr[(x + 90)/30][(y + 30)/30] == 0)
-                  {
-                    shapeTransform = "DEFAULT";
+                    if(x != 0 && x != 300 && x != 270 && x != 240
+                    && arr[(x - 30)/30][(y + 30)/30] == 0
+                    && arr[(x + 30)/30][(y + 30)/30] == 0
+                    && arr[(x + 60)/30][(y + 30)/30] == 0)
+                    {
+                      shapeTransform = "DEFAULT";
+                    }
                   }
-
-                  break;
+                
+                break;
+                
+          //T Block
+          case 2 :
+          
+                switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600
+                    && arr[(x + 0)/30][(y + 60)/30] == 0)
+                    {
+                      shapeTransform = "a";
+                    }
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(y != 600 && x != 0
+                    && arr[(x - 30)/30][(y + 30)/30] == 0)
+                    {
+                      shapeTransform = "b";
+                    }
+                    
+                    break;
+                    
+                  case "b" :
+                  
+                    if(y != 600
+                    && arr[(x + 0)/30][((y + 0))/30] == 0)
+                    {
+                      shapeTransform = "c";
+                    }
+                    
+                    break;
+                    
+                  case "c" :
+                  
+                    if(y != 600 && x != 270
+                    && arr[(x + 30)/30][(y + 30)/30] == 0)
+                    {
+                      shapeTransform = "DEFAULT";
+                    }
+                }
+                break;
+                
+          //Z Block
+          case 3 :
+          
+                switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600
+                    && arr[(x + 30)/30][(y + 0)/30] == 0
+                    && arr[(x + 0)/30][(y + 60)/30] == 0)
+                    {
+                      shapeTransform = "a";
+                    }
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(x != 0
+                    && arr[(x - 30)/30][(y + 0)/30] == 0
+                    && arr[(x + 0)/30][(y + 0)/30] == 0)
+                    {
+                      shapeTransform = "DEFAULT";
+                    }
+                }
+              break;
+        
+          //S Block
+          case 4 :
+          
+                switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600
+                    && arr[(x - 30)/30][(y + 0)/30] == 0
+                    && arr[(x + 0)/30][(y + 60)/30] == 0)
+                    {
+                      shapeTransform = "a";
+                    }
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(x != 270
+                    && arr[(x + 0)/30][(y + 0)/30] == 0
+                    && arr[(x + 30)/30][(y + 0)/30] == 0)
+                    {
+                      shapeTransform = "DEFAULT";
+                    }
+                }
+              break;
+          
+          //L Block    
+          case 5 :
+          
+              switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 30)/30][(y + 60)/30] == 0
+                    && arr[(x + 0)/30][(y + 0)/30] == 0)
+                    {
+                      shapeTransform = "a";
+                    }
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(x != 0
+                    && arr[(x - 30)/30][(y + 60)/30] == 0
+                    && arr[(x - 30)/30][(y + 30)/30] == 0
+                    && arr[(x + 30)/30][(y + 30)/30] == 0)
+                    {
+                      shapeTransform = "b";
+                    }
+                    
+                    break;
+                    
+                  case "b" :
+                  
+                    if(
+                       arr[(x - 30)/30][(y + 0)/30] == 0
+                    && arr[(x + 0)/30][(y + 0)/30] == 0
+                    && arr[(x + 0)/30][(y + 60)/30] == 0)
+                    {
+                      shapeTransform = "c";
+                    }
+                    
+                    break;
+                    
+                  case "c" :
+                  
+                    if(x != 270
+                    && arr[(x + 30)/30][(y + 0)/30] == 0
+                    && arr[(x + 30)/30][(y + 30)/30] == 0
+                    && arr[(x - 30)/30][(y + 30)/30] == 0)
+                    {
+                      shapeTransform = "DEFAULT";
+                    }
                 }
                 break;
               
-          case 2 :
-    
-              break;
-              
-          case 3 :
-    
-              break;
-              
-          case 4 :
-    
-              break;
-              
-          case 5 :
-    
-              break;
-              
+          //J Block
           case 6 :
-      
-              break;
+          
+              switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 0)/30][(y + 0)/30] == 0
+                    && arr[(x + 30)/30][(y + 0)/30] == 0)
+                    {
+                      shapeTransform = "a";
+                    }
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(x != 0
+                    && arr[(x - 30)/30][(y + 30)/30] == 0
+                    && arr[(x + 30)/30][(y + 30)/30] == 0
+                    && arr[(x + 30)/30][(y + 60)/30] == 0)
+                    {
+                      shapeTransform = "b";
+                    }
+                    
+                    break;
+                    
+                  case "b" :
+                  
+                    if(
+                       arr[(x - 30)/30][(y + 60)/30] == 0
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 0)/30][(y + 0)/30] == 0)
+                    {
+                      shapeTransform = "c";
+                    }
+                    
+                    break;
+                    
+                  case "c" :
+                  
+                    if(x != 270
+                    && arr[(x - 30)/30][(y + 0)/30] == 0
+                    && arr[(x - 30)/30][(y + 30)/30] == 0
+                    && arr[(x + 30)/30][(y + 30)/30] == 0)
+                    {
+                      shapeTransform = "DEFAULT";
+                    }
+                }
+                break;
         }
       }
     
@@ -451,90 +965,583 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
       { 
         switch(shapeType) 
         {
+        
           //Square Block
           case 0 :
             if(y  != 600 
-              && arr[(x) / 30][(y + 60) / 30] == 0
+              && arr[(x + 0) / 30][(y + 60) / 30] == 0
               && arr[(x + 30) / 30][(y + 60) / 30] == 0)
               {
                 y += 30;
               }   
               
-              gracePeriod = 0; 
+              //gracePeriod = 0; 
 
               break;
     
           //Long Block
           case 1 :
           
-            switch(shapeTransform)
+                switch(shapeTransform)
                 {
-                //shape size = 120px, so 120px + 180px = 300 (the border)
-                //careful copy pasting stuff ahhh
-                case "DEFAULT" :
-                  if(y != 600 
-                  && arr[((x)/30)][(y + 60)/30] == 0
-                  && arr[((x + 30)/30)][(y + 60)/30] == 0
-                  && arr[((x + 60)/30)][(y + 60)/30] == 0
-                  && arr[((x + 90)/30)][(y + 60)/30] == 0)
-                  {
-                    y += 30;
-                  }
+                  case "DEFAULT" :
                   
-                  gracePeriod = 0; 
+                    if(y != 600 
+                    && arr[((x - 30)/30)][(y + 60)/30] == 0
+                    && arr[((x + 0)/30)][(y + 60)/30] == 0
+                    && arr[((x + 30)/30)][(y + 60)/30] == 0
+                    && arr[((x + 60)/30)][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "a" :
                   
-                  break;
-                  
-                case "a" :
-                
-                  if(y != 600 && y != 570 && y != 540 && y != 510
-                  && arr[((x)/30)][(y + 150)/30] == 0)
-                  {
-                    y += 30;
-                  }
-                  
-                  gracePeriod = 0; 
- 
-                  break;
+                    if(y != 540
+                    && arr[((x + 0)/30)][(y + 120)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
                 }
                 
               break;
               
           case 2 :
-    
+
+                //T Block
+                switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600 
+                    && arr[((x + 0)/30)][(y + 60)/30] == 0
+                    && arr[((x - 30)/30)][(y + 60)/30] == 0
+                    && arr[((x + 30)/30)][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(y != 570
+                    && arr[((x + 0)/30)][(y + 90)/30] == 0
+                    && arr[((x + 30)/30)][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+   
+                    break;
+                    
+                    case "b" :
+                  
+                    if(y != 570
+                    && arr[((x + 0)/30)][(y + 90)/30] == 0
+                    && arr[((x + 30)/30)][(y + 60)/30] == 0
+                    && arr[((x - 30)/30)][(y + 60)/30] == 0)
+                    
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+   
+                    break;
+                    
+                    case "c" :
+                  
+                    if(y != 570
+                    && arr[((x + 0)/30)][(y + 90)/30] == 0
+                    && arr[((x - 30)/30)][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                }
+                
               break;
               
+           //Z Block
           case 3 :
-    
+          
+                switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600 
+                    && arr[((x + 0)/30)][(y + 60)/30] == 0
+                    && arr[((x + 30)/30)][(y + 60)/30] == 0
+                    && arr[((x + 30)/30)][(y + 0)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(y != 570
+                    && arr[((x + 0)/30)][(y + 90)/30] == 0
+                    && arr[((x + 30)/30)][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                }
               break;
-              
+          
+          //S Block
           case 4 :
-    
+          
+                switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600 
+                    && arr[((x + 0)/30)][(y + 60)/30] == 0
+                    && arr[((x - 30)/30)][(y + 60)/30] == 0
+                    && arr[((x + 30)/30)][(y + 30)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(y != 570
+                    && arr[((x + 0)/30)][(y + 90)/30] == 0
+                    && arr[((x - 30)/30)][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+   
+               }
               break;
-              
+           
+          //L Block
           case 5 :
-    
-              break;
-              
+          
+                switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 30)/30][(y + 60)/30] == 0
+                    && arr[(x - 30)/30][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(y != 570
+                    && arr[(x + 0)/30][(y + 90)/30] == 0
+                    && arr[(x + 30)/30][(y + 90)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "b" :
+                  
+                    if(y != 570
+                    && arr[(x - 30)/30][(y + 90)/30] == 0
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 30)/30][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "c" :
+                  
+                    if(y != 570
+                    && arr[(x - 30)/30][(y + 30)/30] == 0
+                    && arr[(x + 0)/30][(y + 90)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                }
+                break;
+          
+          //J Block   
           case 6 :
 
-              break;
+              switch(shapeTransform)
+                {
+                  case "DEFAULT" :
+                  
+                    if(y != 600
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 30)/30][(y + 60)/30] == 0
+                    && arr[(x - 30)/30][(y + 60)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "a" :
+                  
+                    if(y != 570
+                    && arr[(x + 0)/30][(y + 90)/30] == 0
+                    && arr[(x + 30)/30][(y + 30)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "b" :
+                  
+                    if(y != 570
+                    && arr[(x - 30)/30][(y + 60)/30] == 0
+                    && arr[(x + 0)/30][(y + 60)/30] == 0
+                    && arr[(x + 30)/30][(y + 90)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                    
+                    break;
+                    
+                  case "c" :
+                  
+                    if(y != 570
+                    && arr[(x + 30)/30][(y + 90)/30] == 0
+                    && arr[(x + 0)/30][(y + 90)/30] == 0)
+                    {
+                      y += 30;
+                    }
+                    
+                    //gracePeriod = 0; 
+                }
+                break;
         }
       }
     }
     repaint();
   }
   
-  //Private helper function that checks if a shape is located ontop of another shape or on the board floor; checks/updates internally; need to make more for each transform
+  //Draws current shapes to the JPanel and updates them every cycle
+  public void drawShape(Graphics2D g2d)
+  {
+    switch(shapeType) 
+    {
+      //Square Block
+      case 0 :
+          
+          g2d.setColor(shapeColors[1]);
+          
+          if(shapeSpawn == true)
+          {
+            x = 120;
+            y = 0;
+            
+            shapeSpawn = false;
+          }
+          
+          g2d.fillRect(x + 1, y - 59, 29, 29);
+          g2d.fillRect(x + 1, y - 29, 29, 29);
+          g2d.fillRect(x + 31, y - 59, 29, 29);
+          g2d.fillRect(x + 31, y - 29, 29, 29);
+          break;
+
+      //Long Block
+      case 1 :
+          
+          g2d.setColor(shapeColors[2]);
+          
+          if(shapeSpawn == true)
+          {
+            x = 120;
+            y = 0;
+            
+            shapeSpawn = false;
+          }
+          
+          switch(shapeTransform)
+          {
+            case "DEFAULT":
+            
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              g2d.fillRect(x + 61, y - 29, 29, 29);
+              break;
+              
+            case "a":
+            
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              g2d.fillRect(x + 1, y + 31, 29, 29);
+              break;
+          }
+          break;
+      
+      //T Block
+      case 2 :
+      
+          g2d.setColor(shapeColors[3]);
+          
+          if(shapeSpawn == true)
+          {
+            x = 120;
+            y = 0;
+            
+            shapeSpawn = false;
+          }
+          
+          switch(shapeTransform)
+          {
+            case "DEFAULT":
+            
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              break;
+              
+            case "a":
+            
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              break;
+              
+            case "b":
+            
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              break;
+              
+            case "c":
+            
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              break;
+          }
+          break;
+          
+      //Z Block
+      case 3 :
+          g2d.setColor(shapeColors[4]);
+          
+          if(shapeSpawn == true)
+          {
+            x = 120;
+            y = 0;
+            
+            shapeSpawn = false;
+          }
+          
+          switch(shapeTransform)
+          {
+            case "DEFAULT":
+            
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x - 29, y - 59, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              break;
+              
+            case "a":
+            
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              break;
+          }
+          break;
+          
+      //S Block
+      case 4 :
+          g2d.setColor(shapeColors[5]);
+          
+          if(shapeSpawn == true)
+          {
+            x = 120;
+            y = 0;
+            
+            shapeSpawn = false;
+          }
+          
+          switch(shapeTransform)
+          {
+            case "DEFAULT":
+            
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 31, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              break;
+              
+            case "a":
+            
+              g2d.fillRect(x - 29, y - 59, 29, 29);
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              break;
+          }
+          break;
+          
+      //L Block
+      case 5 :
+      
+          g2d.setColor(shapeColors[6]);
+          
+          if(shapeSpawn == true)
+          {
+            x = 120;
+            y = 0;
+            
+            shapeSpawn = false;
+          }
+          
+          switch(shapeTransform)
+          {
+            case "DEFAULT":
+            
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 59, 29, 29);
+              break;
+              
+            case "a":
+            
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              g2d.fillRect(x + 31, y + 1, 29, 29);
+              break;
+              
+            case "b":
+            
+              g2d.fillRect(x - 29, y + 1, 29, 29);
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              break;
+              
+            case "c":
+            
+              g2d.fillRect(x - 29, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              break;
+          }
+          break;
+      
+      //J Block    
+      case 6 :
+      
+          g2d.setColor(shapeColors[7]);
+          
+          if(shapeSpawn == true)
+          {
+            x = 120;
+            y = 0;
+            
+            shapeSpawn = false;
+          }
+          
+          switch(shapeTransform)
+          {
+            case "DEFAULT":
+            
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              g2d.fillRect(x - 29, y - 59, 29, 29);
+              break;
+              
+            case "a":
+            
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              g2d.fillRect(x + 31, y - 59, 29, 29);
+              break;
+              
+            case "b":
+            
+              g2d.fillRect(x + 31, y + 1, 29, 29);
+              g2d.fillRect(x - 29, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 31, y - 29, 29, 29);
+              break;
+              
+            case "c":
+            
+              g2d.fillRect(x - 29, y + 1, 29, 29);
+              g2d.fillRect(x + 1, y - 59, 29, 29);
+              g2d.fillRect(x + 1, y - 29, 29, 29);
+              g2d.fillRect(x + 1, y + 1, 29, 29);
+              break;
+          }
+          break;
+    }
+  }
+  
+  //Private helper function that checks if a shape is located ontop of another shape or on the board floor
   private int placementCheck()
   {
     switch(shapeType) 
     {
       //Square Block
       case 0 :
+      
           if(y  == 600 
-          || arr[(x) / 30][(y + 60) / 30] != 0
-          || arr[(x + 30) / 30][(y + 60) / 30] != 0)
+          || arr[(x + 0)/30][(y + 60)/30] != 0
+          || arr[(x + 30)/30][(y + 60)/30] != 0)
           {
     
             if(gracePeriod > 0)
@@ -546,10 +1553,10 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
         
             else
             {
-              arr[((x + 0 )/30)][( y / 30)] = 1;
-              arr[((x + 0 )/30)][((y + 30)/ 30)] = 1;
-              arr[((x + 30)/30)][( y / 30)] = 1;
-              arr[((x + 30)/30)][((y + 30)/ 30)] = 1;
+              arr[((x + 0)/30)][(y + 0)/30] = 1;
+              arr[((x + 0)/30)][(y + 30)/30] = 1;
+              arr[((x + 30)/30)][(y + 0)/30] = 1;
+              arr[((x + 30)/30)][(y + 30)/30] = 1;
               
               return 1;
             }
@@ -564,10 +1571,10 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
         {
           case "DEFAULT" :
             if(y  == 600 
-            || arr[(x + 0 ) / 30][(y + 60) / 30] != 0
-            || arr[(x + 30) / 30][(y + 60) / 30] != 0
-            || arr[(x + 60) / 30][(y + 60) / 30] != 0
-            || arr[(x + 90) / 30][(y + 60) / 30] != 0)
+            || arr[(x + 0)/30][(y + 60)/30] != 0
+            || arr[(x - 30)/30][(y + 60)/30] != 0
+            || arr[(x + 30)/30][(y + 60)/30] != 0
+            || arr[(x + 60)/30][(y + 60)/30] != 0)
             {
               
               if(gracePeriod > 0)
@@ -579,10 +1586,10 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
           
               else
               {
-                arr[(x + 0 ) / 30][(y + 30) / 30] = 2;
-                arr[(x + 30) / 30][(y + 30) / 30] = 2;
-                arr[(x + 60) / 30][(y + 30) / 30] = 2;
-                arr[(x + 90) / 30][(y + 30) / 30] = 2;
+                arr[(x + 0)/30][(y + 30)/30] = 2;
+                arr[(x - 30)/30][(y + 30)/30] = 2;
+                arr[(x + 30)/30][(y + 30)/30] = 2;
+                arr[(x + 60)/30][(y + 30)/30] = 2;
                     
                 return 1;
               }
@@ -590,11 +1597,8 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
             break;
             
           case "a" :
-            if(y  == 510 
-            || arr[(x + 0) / 30][(y + 60) / 30] != 0
-            || arr[(x + 0) / 30][(y + 90) / 30] != 0
-            || arr[(x + 0) / 30][(y + 120) / 30] != 0
-            || arr[(x + 0) / 30][(y + 150) / 30] != 0)
+            if(y  == 540 
+            || arr[(x + 0)/30][(y +120)/30] != 0)
             {
               
               if(gracePeriod > 0)
@@ -606,10 +1610,10 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
           
               else
               {
-                arr[(x + 0 ) / 30][(y + 30) / 30] = 2;
-                arr[(x + 0 ) / 30][(y + 60) / 30] = 2;
-                arr[(x + 0 ) / 30][(y + 90) / 30] = 2;
-                arr[(x + 0 ) / 30][(y + 120) / 30] = 2;
+                arr[(x + 0)/30][(y + 0)/30] = 2;
+                arr[(x + 0)/30][(y + 30)/30] = 2;
+                arr[(x + 0)/30][(y + 60)/30] = 2;
+                arr[(x + 0)/30][(y + 90)/30] = 2;
                     
                 return 1;
               }
@@ -619,23 +1623,471 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
 
           break;
           
+      //T Block
       case 2 :
+      
+       switch(shapeTransform)
+        {
+          case "DEFAULT" :
+          
+            if(y  == 600 
+            || arr[(x + 0)/30][(y + 60)/30] != 0
+            || arr[(x - 30)/30][(y + 60)/30] != 0
+            || arr[(x + 30)/30][(y + 60)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x + 0)/30][(y + 30)/30] = 3;
+                arr[(x - 30)/30][(y + 30)/30] = 3;
+                arr[(x + 30)/30][(y + 30)/30] = 3;
+                arr[(x + 0)/30][(y) / 30] = 3;
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "a" :
+          
+            if(y  == 570 
+            || arr[(x + 30)/30][(y + 60)/30] != 0
+            || arr[(x + 0)/30][(y + 90)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x + 30)/30][(y + 30)/30] = 3;
+                arr[(x + 0)/30][(y + 0)/30] = 3;
+                arr[(x + 0)/30][(y + 30)/30] = 3;
+                arr[(x + 0)/30][(y + 60)/30] = 3;
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "b" :
+          
+          if(y  == 570 
+          || arr[(x - 30)/30][(y + 60)/30] != 0
+          || arr[(x + 30)/30][(y + 60)/30] != 0
+          || arr[(x + 0)/30][(y + 90)/30] != 0)
+          {
+            
+            if(gracePeriod > 0)
+            {
+              gracePeriod = gracePeriod - 1;
+              
+              return 0;
+            }
+        
+            else
+            {
+              arr[(x - 30)/30][(y + 30)/30] = 3;
+              arr[(x + 30)/30][(y + 30)/30] = 3;
+              arr[(x + 0 )/30][(y + 60)/30] = 3;
+              arr[(x + 0 )/30][(y + 30)/30] = 3;
+                  
+              return 1;
+              }
+            }
+            break;
+          
+          case "c" :
+          
+            if(y  == 570 
+            || arr[(x - 30)/30][(y + 60)/30] != 0
+            || arr[(x + 0)/30][(y + 90)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 30)/30] = 3;
+                arr[(x + 0)/30][(y + 0)/30] = 3;
+                arr[(x + 0)/30][(y + 30)/30] = 3;
+                arr[(x + 0)/30][(y + 60)/30] = 3;
+                    
+                return 1;
+              }
+            }
+            break;
+          }
 
           break;
           
+      //Z Block   
       case 3 :
+      
+        switch(shapeTransform)
+        {
+          case "DEFAULT" :
+          
+            if(y  == 600 
+            || arr[(x - 30)/30][(y + 30)/30] != 0
+            || arr[(x + 0)/30][(y + 60)/30] != 0
+            || arr[(x + 30)/30][(y + 60)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 0)/30] = 4;
+                arr[(x + 0)/30][(y + 0)/30] = 4;
+                arr[(x + 0)/30][(y + 30)/30] = 4;
+                arr[(x + 30)/30][(y + 30)/30] = 4;
+                
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "a" :
+          
+            if(y  == 570 
+            || arr[(x + 30)/30][(y + 60)/30] != 0
+            || arr[(x + 0)/30][(y + 90)/30] != 0)
+
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x + 0)/30][(y + 30)/30] = 4;
+                arr[(x + 0)/30][(y + 60)/30] = 4;
+                arr[(x + 30)/30][(y + 30)/30] = 4;
+                arr[(x + 30)/30][(y + 0)/30] = 4;
+                    
+                return 1;
+              }
+            }
+            break;
+          }
 
           break;
-          
+
+      //S Block 
       case 4 :
+      
+        switch(shapeTransform)
+        {
+          case "DEFAULT" :
+          
+            if(y  == 600 
+            || arr[(x - 30)/30][(y + 60)/30] != 0
+            || arr[(x + 0)/30][(y + 60)/30] != 0
+            || arr[(x + 30)/30][(y + 30)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 30)/30] = 5;
+                arr[(x + 0)/30][(y + 30)/30] = 5;
+                arr[(x + 0)/30][(y + 0)/30] = 5;
+                arr[(x + 30)/30][(y + 0)/30] = 5;
+                
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "a" :
+          
+            if(y  == 570 
+            || arr[(x - 30)/30][(y + 60)/30] != 0
+            || arr[(x + 0)/30][(y + 90)/30] != 0)
+
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 0)/30] = 5;
+                arr[(x - 30)/30][(y + 30)/30] = 5;
+                arr[(x + 0)/30][(y + 30)/30] = 5;
+                arr[(x + 0)/30][(y + 60)/30] = 5;
+                    
+                return 1;
+              }
+            }
+            break;
+          }
 
           break;
-          
+      
+      //L Block    
       case 5 :
+      
+      switch(shapeTransform)
+        {
+          case "DEFAULT" :
+          
+            if(y  == 600 
+            || arr[(x - 30)/30][(y + 60)/30] != 0
+            || arr[(x + 0)/30][(y + 60)/30] != 0
+            || arr[(x + 30)/30][(y + 60)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 30)/30] = 6;
+                arr[(x + 0)/30][(y + 30)/30] = 6;
+                arr[(x + 30)/30][(y + 30)/30] = 6;
+                arr[(x + 30)/30][(y + 0)/30] = 6;
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "a" :
+          
+            if(y  == 570 
+            || arr[(x + 0)/30][(y + 90)/30] != 0
+            || arr[(x + 30)/30][(y + 90)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x + 0)/30][(y + 0)/30] = 6;
+                arr[(x + 0)/30][(y + 30)/30] = 6;
+                arr[(x + 0)/30][(y + 60)/30] = 6;
+                arr[(x + 30)/30][(y + 60)/30] = 6;
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "b" :
+          
+          if(y  == 570 
+          || arr[(x - 30)/30][(y + 90)/30] != 0
+          || arr[(x + 0)/30][(y + 60)/30] != 0
+          || arr[(x + 30)/30][(y + 60)/30] != 0)
+          {
+            
+            if(gracePeriod > 0)
+            {
+              gracePeriod = gracePeriod - 1;
+              
+              return 0;
+            }
+        
+            else
+            {
+              arr[(x - 30)/30][(y + 60)/30] = 6;
+              arr[(x - 30)/30][(y + 30)/30] = 6;
+              arr[(x + 0)/30][(y + 30)/30] = 6;
+              arr[(x + 30)/30][(y + 30)/30] = 6;
+                  
+              return 1;
+              }
+            }
+            break;
+          
+          case "c" :
+          
+            if(y  == 570 
+            || arr[(x - 30)/30][(y + 30)/30] != 0
+            || arr[(x + 0)/30][(y + 90)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 0)/30] = 6;
+                arr[(x + 0)/30][(y + 0)/30] = 6;
+                arr[(x + 0)/30][(y + 30)/30] = 6;
+                arr[(x + 0)/30][(y + 60)/30] = 6;
+                    
+                return 1;
+              }
+            }
+            break;
+          }
 
           break;
-          
+      
+      //J Block   
       case 6 :
+      
+      switch(shapeTransform)
+        {
+          case "DEFAULT" :
+          
+            if(y  == 600 
+            || arr[(x - 30)/30][(y + 60)/30] != 0
+            || arr[(x + 0)/30][(y + 60)/30] != 0
+            || arr[(x + 30)/30][(y + 60)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 30)/30] = 7;
+                arr[(x + 0)/30][(y + 30)/30] = 7;
+                arr[(x + 30)/30][(y + 30)/30] = 7;
+                arr[(x - 30)/30][(y + 0)/30] = 7;
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "a" :
+          
+            if(y  == 570 
+            || arr[(x + 0)/30][(y + 90)/30] != 0
+            || arr[(x + 30)/30][(y + 30)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x + 0)/30][(y + 0)/30] = 7;
+                arr[(x + 0)/30][(y + 30)/30] = 7;
+                arr[(x + 0)/30][(y + 60)/30] = 7;
+                arr[(x + 30)/30][(y + 0)/30] = 7;
+                    
+                return 1;
+              }
+            }
+            break;
+            
+          case "b" :
+          
+          if(y  == 570 
+          || arr[(x + 30)/30][(y + 90)/30] != 0
+          || arr[(x + 0)/30][(y + 60)/30] != 0
+          || arr[(x - 30)/30][(y + 60)/30] != 0)
+          {
+            
+            if(gracePeriod > 0)
+            {
+              gracePeriod = gracePeriod - 1;
+              
+              return 0;
+            }
+        
+            else
+            {
+              arr[(x - 30)/30][(y + 30)/30] = 7;
+              arr[(x + 0)/30][(y + 30)/30] = 7;
+              arr[(x + 30)/30][(y + 30)/30] = 7;
+              arr[(x + 30)/30][(y + 60)/30] = 7;
+                  
+              return 1;
+              }
+            }
+            break;
+          
+          case "c" :
+          
+            if(y  == 570 
+            || arr[(x - 30)/30][(y + 90)/30] != 0
+            || arr[(x + 0)/30][(y + 90)/30] != 0)
+            {
+              
+              if(gracePeriod > 0)
+              {
+                gracePeriod = gracePeriod - 1;
+                
+                return 0;
+              }
+          
+              else
+              {
+                arr[(x - 30)/30][(y + 60)/30] = 7;
+                arr[(x + 0)/30][(y + 0)/30] = 7;
+                arr[(x + 0)/30][(y + 30)/30] = 7;
+                arr[(x + 0)/30][(y + 60)/30] = 7;
+                    
+                return 1;
+              }
+            }
+            break;
+          }
   
           break;
     }
