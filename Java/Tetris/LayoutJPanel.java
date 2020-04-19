@@ -10,7 +10,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.lang.Math;
 
-public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
+public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
+{
 
   //General shape coordinates
   private int x = 0, y = 0;
@@ -40,7 +41,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   
   //Prevents using key events between shape creation - 
   //shouldn't really need, but I was getting OOB exceptions by smashing my fist onto the arrow keys
-  private int shapeDelay = 0;
+  private boolean shapeDelay = false;
+  
+  private boolean loseCheck = false;
   
   //Tetris board: 10 x 22; only 10 x 20 is drawn on the panel since shapes are created above player vision
   private int arr[][] = new int[10][22];
@@ -49,9 +52,8 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)}; 
 
   
-  public void paintComponent( Graphics g)
-  {
-    setBackground(Color.GRAY);
+  public void paintComponent( Graphics g) 
+  {    
     double velX = 2, velY = 2;
     
     double width = getWidth();
@@ -80,15 +82,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
     g2d.setColor(Color.BLACK);
     g2d.draw(coordinates);
     
-    //Draws current shapes to the JPanel and updates them every cycle
-    drawShape(g2d);
-    
-    //Restores key events for player when shape is in play
-    if(shapeDelay == 0)
-    {
-      shapeDelay = 1;
-    }
-    
+
     //Checks tetris board for all block locations and fills them
     for(int i = 0; i < 10; i++)
     {
@@ -101,6 +95,22 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
           g2d.fillRect((i * 30) + 1, (j * 30) - 59, 29, 29);
         }
       }
+    }
+    
+    //Draws current shapes to the JPanel and updates them every cycle
+    drawShape(g2d);
+    
+    if(loseCheck)
+    {     
+       setBackground(Color.BLACK);
+    }
+    
+    else {setBackground(Color.GRAY);}
+    
+    //Restores key events for player when shape is in play
+    if(!shapeDelay)
+    {
+      shapeDelay = true;
     }
       
     
@@ -126,9 +136,28 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
     System.out.println();
   }
  
- //Action event that triggers through a timer cycle
+   //Action event that triggers through a timer cycle
   public void actionPerformed(ActionEvent e)
   {
+    
+    //If losing condition was met, exit the game
+    if(loseCheck)
+    {     
+
+     try 
+      {  
+        TimeUnit.MILLISECONDS.sleep(10000);
+      } 
+      
+      catch (InterruptedException r)
+      {
+        
+      }
+      
+      System.exit(0);
+    }
+
+    
     int check = placementCheck();
 
     if(check == 1)
@@ -139,42 +168,52 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
       shapeSpawn = true;
       shapeTransform = "DEFAULT";
       gracePeriod = 2;
-      shapeDelay = 0;
+      shapeDelay = false;
       
       //Coordinate reset for next shape
       x = 0;
       y = 0;
        
-   for(int i = 21; i > 0; i--)
-    {
-      int counter = 0;
-      
-      for(int j = 0; j < 10; j++)
+      //Checks rows to see if they are completed; increases player score and squashes board if so
+      for(int i = 21; i > 0; i--)
       {
-        if(arr[j][i] != 0)
-        {
-          counter++;
-        }
-      }
+        int counter = 0;
       
-      if(counter == 10)
-      {
-        for(int j = i; j > 0; j--)
+        for(int j = 0; j < 10; j++)
         {
-          for(int k = 0; k < 10; k++)
+          if(arr[j][i] != 0)
           {
-            arr[k][j] = arr[k][j - 1];
+            counter++;
           }
         }
-        i++;
+        
+        if(counter == 10)
+        {
+          for(int j = i; j > 0; j--)
+          {
+            for(int k = 0; k < 10; k++)
+            {
+              arr[k][j] = arr[k][j - 1];
+            }
+          }
+          i++;
+        }
       }
-    }
-
-      
-      
+    
+      //Checks the board if the losing condition is met
+      for(int i = 0; i < 10; i++)
+      {
+        if(arr[i][0] != 0 || arr[i][1] != 0)
+          {
+            loseCheck = true;
+            shapeDelay = false;
+            break;
+          }
+      }
+        
       //print test
       printBoard();
-      
+        
       repaint();
       return;
     }
@@ -191,7 +230,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
   public void keyPressed(KeyEvent e)
   {
     //Pauses event until a shape is created
-    if(shapeDelay == 0)
+    if(!shapeDelay)
     {
       return;
     }
@@ -1258,7 +1297,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
         }
       }
     }
-    repaint();
+
   }
   
   //Draws current shapes to the JPanel and updates them every cycle
@@ -1531,7 +1570,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
     }
   }
   
-  //Private helper function that checks if a shape is located ontop of another shape or on the board floor
+  //Checks if a shape is located ontop of another shape or on the board floor
   private int placementCheck()
   {
     switch(shapeType) 
@@ -2094,6 +2133,12 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener{
     
     return 2;
   }
+  
+  private void gameOver(Graphics2D g2d, int c)
+  {
+   
+  }
+
   
   public void keyReleased(KeyEvent e) 
   {
