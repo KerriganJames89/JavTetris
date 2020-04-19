@@ -20,7 +20,7 @@ public class Layout {
     frame.getContentPane().add( layoutjpanel );
     frame.pack();
     frame.setVisible( true );
-    frame.setResizable(false);
+    frame.setResizable(true);
     frame.setBackground(Color.GRAY);
   }
 }

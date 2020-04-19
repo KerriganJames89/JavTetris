@@ -66,6 +66,12 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     Graphics2D g2d = (Graphics2D) g;
     GeneralPath coordinates = new GeneralPath();
     
+    ////Origin
+  g2d.translate(0, 0);
+
+  //Scales to window size
+  g2d.scale(width/300, height/600);
+    
     //Draws board gridlines to Jpanel
     for(int i = 0; i <= width; i+=30)
     {
@@ -81,6 +87,8 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     
     g2d.setColor(Color.BLACK);
     g2d.draw(coordinates);
+    
+    
     
 
     //Checks tetris board for all block locations and fills them
@@ -1285,7 +1293,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                   case "c" :
                   
                     if(y != 570
-                    && arr[(x + 30)/30][(y + 90)/30] == 0
+                    && arr[(x - 30)/30][(y + 90)/30] == 0
                     && arr[(x + 0)/30][(y + 90)/30] == 0)
                     {
                       y += 30;
