@@ -16,12 +16,13 @@ public class Layout {
         
     LayoutJPanel layoutjpanel = new LayoutJPanel();
     frame.add( layoutjpanel );
-    layoutjpanel.setPreferredSize(new Dimension(300,600));
+    layoutjpanel.setPreferredSize(new Dimension(500,600));
     frame.getContentPane().add( layoutjpanel );
     frame.pack();
     frame.setVisible( true );
     frame.setResizable(true);
     frame.setBackground(Color.GRAY);
+    layoutjpanel.setFocusable(true);
   }
 }
 

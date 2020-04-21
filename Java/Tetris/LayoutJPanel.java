@@ -1,14 +1,16 @@
+import java.awt.*;
+import javax.swing.*;
+import java.awt.event.*;
 import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.geom.GeneralPath;
 import java.awt.Color;
-import javax.swing.*;
 import javax.swing.JPanel;
 import java.awt.Component;
-import java.awt.event.*;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.lang.Math;
+import java.awt.geom.Line2D;
 
 public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
 {
@@ -16,10 +18,22 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   //General shape coordinates
   private int x = 0, y = 0;
   
+  //Preview shape coordinates
+  private int x2 = 385, y2 = 205;
+  
   private Random random = new Random(); 
   
   //Default game speed; as the player progresses, the speed at which the shapes fall increases
-  private Timer t = new Timer(250, this);
+  private Timer t = new Timer(500, this);
+  private int timeUpdater = 500;
+  private boolean timeSwitch = true;
+  
+  //Player scoring; also affects game speed
+  private int totalScore = 0;
+  private double lineValue[] = new double[] {40, 200, 300, 1200};
+  private int scoreCombo = 0;
+  private int currentDifficulty = 0;
+  private int lineCounter = 0;
   
   //Throttles the speed at which players can move the shapes
   private long timePrevious = 0;
@@ -27,6 +41,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   private long timeCheck = 0;
   
   //Picks a shape at random and draws it every cycle till placed
+  private int nextShape = random.nextInt(7);
   private int shapeType = random.nextInt(7);
   //private int shapeType = 6;
   
@@ -36,58 +51,71 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   //Indicator for current shape's turning position
   private String shapeTransform = "DEFAULT";
   
-  //GracePeriod gives the player time to move their shape when ontop of another shape
-  private int gracePeriod = 1;
+  //GracePeriod gives the player time to move their shape when ontop of another shape; based on difficulty level
+  private int gracePeriod[] = new int[] {2, 2, 2, 2, 3, 3, 3, 4, 4, 6};
+  private int graceCounter = 2;
   
   //Prevents using key events between shape creation - 
   //shouldn't really need, but I was getting OOB exceptions by smashing my fist onto the arrow keys
   private boolean shapeDelay = false;
   
+  //Lose condition check
   private boolean loseCheck = false;
   
   //Tetris board: 10 x 22; only 10 x 20 is drawn on the panel since shapes are created above player vision
   private int arr[][] = new int[10][22];
   
-  private Color[] shapeColors = new Color[] {Color.WHITE, new Color(255, 136, 17), Color.WHITE, 
+  //Color Palette for blocks
+  private Color[] shapeColors = new Color[] {Color.GRAY, new Color(255, 136, 17), Color.WHITE, 
   new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)}; 
+  
+  //private Color[] shapeColors = new Color[] {Color.GRAY, new Color(255, 136, 17), Color.WHITE, 
+  //new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)};
+  
 
+  
+  
   
   public void paintComponent( Graphics g) 
   {    
+  
     double velX = 2, velY = 2;
     
     double width = getWidth();
     double height = getHeight();
 
-    this.addKeyListener(this);
-    this.setFocusable(true);
+    addKeyListener(this);
+    requestFocus();
+    setFocusable(true);
     
     super.paintComponent( g );
     Graphics2D g2d = (Graphics2D) g;
     GeneralPath coordinates = new GeneralPath();
+    GeneralPath divider = new GeneralPath();
+    
     
     ////Origin
-  g2d.translate(0, 0);
+  //g2d.translate(0, 0);
 
   //Scales to window size
-  g2d.scale(width/300, height/600);
+  //g2d.scale(width/300, height/600);
     
     //Draws board gridlines to Jpanel
-    for(int i = 0; i <= width; i+=30)
+    g2d.setStroke(new BasicStroke(1));
+    for(int i = 0; i <= 300; i+=30)
     {
-      coordinates.moveTo(i,height);
+      coordinates.moveTo(i,600);
       coordinates.lineTo(i,0);
     }
       
-    for(int i = 0; i <= height; i+=30)
+    for(int i = 0; i <= 600; i+=30)
     {
-      coordinates.moveTo(width,i);
+      coordinates.moveTo(300,i);
       coordinates.lineTo(0,i);
     }
     
     g2d.setColor(Color.BLACK);
     g2d.draw(coordinates);
-    
     
     
 
@@ -113,7 +141,24 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
        setBackground(Color.BLACK);
     }
     
-    else {setBackground(Color.GRAY);}
+    else {setBackground(shapeColors[0]);}
+    
+    //Draws out the preview info field and the next shape
+    g2d.setStroke(new BasicStroke(10));
+    divider.moveTo(306,0);
+    divider.lineTo(306,600);
+    g2d.setColor(Color.BLACK);
+    g2d.draw(divider);
+    
+    g2d.setColor(Color.GRAY);
+    g2d.fillRect(305, 0, 195, 600);
+    
+    g2d.setColor(Color.BLACK);
+    g2d.fillRect(325, 100, 155, 155);
+    
+    drawPreview(g2d);
+    
+
     
     //Restores key events for player when shape is in play
     if(!shapeDelay)
@@ -126,9 +171,13 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   System.out.println("x value is:" + x);
   System.out.println("y value is:" + y);
   //System.out.println();
-
-  t.start();
-  
+    
+    if(timeSwitch)
+    {
+      t.setDelay(timeUpdater);
+      t.restart();
+      timeSwitch = false;
+    }
   }
   
   public void printBoard()
@@ -172,10 +221,10 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     {
     
       //Variable reset for next shape
-      shapeType = random.nextInt(7);
+      shapeType = nextShape;
+      nextShape = random.nextInt(7);
       shapeSpawn = true;
       shapeTransform = "DEFAULT";
-      gracePeriod = 2;
       shapeDelay = false;
       
       //Coordinate reset for next shape
@@ -197,6 +246,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
         
         if(counter == 10)
         {
+          scoreCombo++;
           for(int j = i; j > 0; j--)
           {
             for(int k = 0; k < 10; k++)
@@ -207,6 +257,24 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           i++;
         }
       }
+      
+      if(scoreCombo > 0)
+      {
+        totalScore += lineValue[scoreCombo - 1] * (currentDifficulty + 1);
+        lineCounter += scoreCombo;
+        
+        if(lineCounter >= 10 && currentDifficulty != 11)
+        {
+          lineCounter = lineCounter % 10;
+          
+          timeUpdater = 300 - (currentDifficulty * 25);
+          timeSwitch = true;
+        }
+        
+        scoreCombo = 0;
+      }
+      
+      graceCounter = gracePeriod[currentDifficulty];
     
       //Checks the board if the losing condition is met
       for(int i = 0; i < 10; i++)
@@ -214,7 +282,6 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
         if(arr[i][0] != 0 || arr[i][1] != 0)
           {
             loseCheck = true;
-            shapeDelay = false;
             break;
           }
       }
@@ -228,7 +295,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     
     else if(check == 2)
     {
-      gracePeriod = 1;
+      graceCounter = gracePeriod[currentDifficulty];
       y += 30;
       repaint();
     }
@@ -246,7 +313,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       timeCurrent = System.currentTimeMillis();
       timeCheck = timeCurrent - timePrevious;
   
-    if (timeCheck < 0 || timeCheck > 5) 
+    if (timeCheck < 0 || timeCheck > 50) 
     {
       timePrevious = timeCurrent;
       
@@ -1022,7 +1089,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                 y += 30;
               }   
               
-              //gracePeriod = 0; 
+              graceCounter = 0; 
 
               break;
     
@@ -1042,7 +1109,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1054,7 +1121,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                 }
                 
               break;
@@ -1074,7 +1141,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1087,7 +1154,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
    
                     break;
                     
@@ -1102,7 +1169,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
    
                     break;
                     
@@ -1115,7 +1182,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                 }
                 
               break;
@@ -1130,12 +1197,12 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                     if(y != 600 
                     && arr[((x + 0)/30)][(y + 60)/30] == 0
                     && arr[((x + 30)/30)][(y + 60)/30] == 0
-                    && arr[((x + 30)/30)][(y + 0)/30] == 0)
+                    && arr[((x - 30)/30)][(y + 30)/30] == 0)
                     {
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1148,7 +1215,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                 }
               break;
           
@@ -1167,7 +1234,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1180,7 +1247,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
    
                }
               break;
@@ -1200,7 +1267,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1213,7 +1280,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1227,7 +1294,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1240,7 +1307,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                 }
                 break;
           
@@ -1259,7 +1326,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1272,7 +1339,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1286,7 +1353,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                     
                     break;
                     
@@ -1299,33 +1366,37 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
                       y += 30;
                     }
                     
-                    //gracePeriod = 0; 
+                    graceCounter = 0; 
                 }
                 break;
         }
       }
     }
+    
+    repaint();
 
   }
   
   //Draws current shapes to the JPanel and updates them every cycle
   public void drawShape(Graphics2D g2d)
   {
-    switch(shapeType) 
+  
+    if(shapeSpawn == true)
     {
+      x = 120;
+      y = 0;
+      
+      shapeSpawn = false;
+    }
+    
+    g2d.setColor(shapeColors[shapeType + 1]);
+    
+    switch(shapeType)
+      {
+      
       //Square Block
       case 0 :
-          
-          g2d.setColor(shapeColors[1]);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
-          
+  
           g2d.fillRect(x + 1, y - 59, 29, 29);
           g2d.fillRect(x + 1, y - 29, 29, 29);
           g2d.fillRect(x + 31, y - 59, 29, 29);
@@ -1335,15 +1406,6 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       //Long Block
       case 1 :
           
-          g2d.setColor(shapeColors[2]);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
           
           switch(shapeTransform)
           {
@@ -1367,17 +1429,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       
       //T Block
       case 2 :
-      
-          g2d.setColor(shapeColors[3]);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
-          
+ 
           switch(shapeTransform)
           {
             case "DEFAULT":
@@ -1416,16 +1468,8 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           
       //Z Block
       case 3 :
-          g2d.setColor(shapeColors[4]);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
-          
+      
+   
           switch(shapeTransform)
           {
             case "DEFAULT":
@@ -1448,15 +1492,8 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           
       //S Block
       case 4 :
-          g2d.setColor(shapeColors[5]);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
+      
+        
           
           switch(shapeTransform)
           {
@@ -1480,16 +1517,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           
       //L Block
       case 5 :
-      
-          g2d.setColor(shapeColors[6]);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
+    
           
           switch(shapeTransform)
           {
@@ -1529,16 +1557,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       
       //J Block    
       case 6 :
-      
-          g2d.setColor(shapeColors[7]);
-          
-          if(shapeSpawn == true)
-          {
-            x = 120;
-            y = 0;
-            
-            shapeSpawn = false;
-          }
+    
           
           switch(shapeTransform)
           {
@@ -1591,12 +1610,12 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           || arr[(x + 30)/30][(y + 60)/30] != 0)
           {
     
-            if(gracePeriod > 0)
-            {
-              gracePeriod = gracePeriod - 1;
-              
-              return 0;
-            }
+            if(graceCounter > 0)
+              {
+                graceCounter = graceCounter - 1;
+                
+                return 0;
+              }
         
             else
             {
@@ -1624,9 +1643,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 60)/30][(y + 60)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1648,9 +1667,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 0)/30][(y +120)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1683,9 +1702,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 30)/30][(y + 60)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1709,9 +1728,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 0)/30][(y + 90)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1736,9 +1755,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           || arr[(x + 0)/30][(y + 90)/30] != 0)
           {
             
-            if(gracePeriod > 0)
+            if(graceCounter > 0)
             {
-              gracePeriod = gracePeriod - 1;
+              graceCounter = graceCounter - 1;
               
               return 0;
             }
@@ -1762,9 +1781,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 0)/30][(y + 90)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1797,9 +1816,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 30)/30][(y + 60)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1825,9 +1844,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
 
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1860,9 +1879,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 30)/30][(y + 30)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1888,9 +1907,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
 
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1923,9 +1942,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 30)/30][(y + 60)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1949,9 +1968,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 30)/30][(y + 90)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -1976,9 +1995,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           || arr[(x + 30)/30][(y + 60)/30] != 0)
           {
             
-            if(gracePeriod > 0)
+            if(graceCounter > 0)
             {
-              gracePeriod = gracePeriod - 1;
+              graceCounter = graceCounter - 1;
               
               return 0;
             }
@@ -2002,9 +2021,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 0)/30][(y + 90)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -2037,9 +2056,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 30)/30][(y + 60)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -2063,9 +2082,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 30)/30][(y + 30)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -2090,9 +2109,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
           || arr[(x - 30)/30][(y + 60)/30] != 0)
           {
             
-            if(gracePeriod > 0)
+            if(graceCounter > 0)
             {
-              gracePeriod = gracePeriod - 1;
+              graceCounter = graceCounter - 1;
               
               return 0;
             }
@@ -2116,9 +2135,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
             || arr[(x + 0)/30][(y + 90)/30] != 0)
             {
               
-              if(gracePeriod > 0)
+              if(graceCounter > 0)
               {
-                gracePeriod = gracePeriod - 1;
+                graceCounter = graceCounter - 1;
                 
                 return 0;
               }
@@ -2142,10 +2161,87 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     return 2;
   }
   
-  private void gameOver(Graphics2D g2d, int c)
+  public void drawPreview(Graphics2D g2d)
   {
-   
+     
+     g2d.setColor(shapeColors[nextShape + 1]);
+     
+     switch(nextShape) 
+        { 
+        
+        //Square Block
+          case 0 :
+    
+              g2d.fillRect(x2 - 12, y2 - 59, 29, 29);
+              g2d.fillRect(x2 - 12, y2 - 29, 29, 29);
+              g2d.fillRect(x2 + 18, y2 - 59, 29, 29);
+              g2d.fillRect(x2 + 18, y2 - 29, 29, 29);
+              break;
+    
+          //Long Block
+          case 1 :
+            
+              g2d.fillRect(x2 - 44, y2 - 40, 29, 29);
+              g2d.fillRect(x2 - 14, y2 - 40, 29, 29);
+              g2d.fillRect(x2 + 16, y2 - 40, 29, 29);
+              g2d.fillRect(x2 + 46, y2 - 40, 29, 29);
+              break;
+          
+          //T Block
+          case 2 :
+          
+                
+              g2d.fillRect(x2 - 29, y2 - 29, 29, 29);
+              g2d.fillRect(x2 + 1, y2 - 59, 29, 29);
+              g2d.fillRect(x2 + 1, y2 - 29, 29, 29);
+              g2d.fillRect(x2 + 31, y2 - 29, 29, 29);
+              break;
+    
+          //Z Block
+          case 3 :
+    
+              g2d.fillRect(x2 + 1, y2 - 29, 29, 29);
+              g2d.fillRect(x2 + 1, y2 - 59, 29, 29);
+              g2d.fillRect(x2 - 29, y2 - 59, 29, 29);
+              g2d.fillRect(x2 + 31, y2 - 29, 29, 29);
+              break;
+              
+          //S Block
+          case 4 :
+            
+              g2d.fillRect(x2 + 1, y2 - 59, 29, 29);
+              g2d.fillRect(x2 + 31, y2 - 59, 29, 29);
+              g2d.fillRect(x2 + 1, y2 - 29, 29, 29);
+              g2d.fillRect(x2 - 29, y2 - 29, 29, 29);
+              break;
+    
+              
+          //L Block
+          case 5 :
+          
+              g2d.fillRect(x2 + 1, y2 - 29, 29, 29);
+              g2d.fillRect(x2 - 29, y2 - 29, 29, 29);
+              g2d.fillRect(x2 + 31, y2 - 29, 29, 29);
+              g2d.fillRect(x2 + 31, y2 - 59, 29, 29);
+              break;
+    
+          
+          //J Block    
+          case 6 :
+          
+              g2d.fillRect(x2 + 1, y2 - 29, 29, 29);
+              g2d.fillRect(x2 - 29, y2 - 29, 29, 29);
+              g2d.fillRect(x2 + 31, y2 - 29, 29, 29);
+              g2d.fillRect(x2 - 29, y2 - 59, 29, 29);
+              break;
+      }
   }
+
+      
+//  private void gameOver(Graphics2D g2d, int c)
+//  {
+//   
+//  }
 
   
   public void keyReleased(KeyEvent e) 
