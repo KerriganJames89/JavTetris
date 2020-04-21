@@ -30,6 +30,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   
   //Player scoring; also affects game speed
   private int totalScore = 0;
+  private int totalLines = 0;
   private double lineValue[] = new double[] {40, 200, 300, 1200};
   private int scoreCombo = 0;
   private int currentDifficulty = 0;
@@ -65,12 +66,23 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   //Tetris board: 10 x 22; only 10 x 20 is drawn on the panel since shapes are created above player vision
   private int arr[][] = new int[10][22];
   
-  //Color Palette for blocks
-  private Color[] shapeColors = new Color[] {Color.GRAY, new Color(255, 136, 17), Color.WHITE, 
+  //Color Palette for each level
+  private Color LevelColor5[] = new Color[] {new Color(55, 56, 59), new Color(255, 213, 0), new Color(24, 227, 222),
+  new Color(116, 24, 227),new Color(227, 24, 24), new Color(58, 227, 24), new Color(227, 130, 24), new Color(24, 77, 227)};
+  
+  private Color LevelColor2[] = new Color[] {new Color(85, 61, 99), new Color(234, 55, 136), new Color(176, 34, 140),
+  new Color(229, 107, 112),new Color(234, 55, 136), new Color(176, 34, 140), new Color(229, 107, 112), new Color(234, 55, 136)};
+  
+  private Color LevelColor3[] = new Color[] {Color.GRAY, new Color(255, 136, 17), Color.WHITE, 
   new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)}; 
   
-  //private Color[] shapeColors = new Color[] {Color.GRAY, new Color(255, 136, 17), Color.WHITE, 
-  //new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)};
+  private Color LevelColor4[] = new Color[] {new Color(20, 52, 43), new Color(255, 87, 159), new Color(187, 223, 197), 
+  new Color(255, 87, 159), new Color(96, 147, 93), new Color(187, 223, 197), new Color(255, 87, 159), new Color(96, 147, 93)}; 
+  
+  private Color LevelColor1[] = new Color[] {new Color(46, 30, 15), new Color(162, 167, 158), new Color(167, 116, 100), 
+  new Color(136, 41, 47), new Color(162, 167, 158), new Color(167, 116, 100), new Color(136, 41, 47), new Color(167, 116, 100)}; 
+  
+  private Color shapeColors[][] = new Color[][] {LevelColor1, LevelColor2, LevelColor3, LevelColor4, LevelColor5};
   
 
   
@@ -91,7 +103,6 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     super.paintComponent( g );
     Graphics2D g2d = (Graphics2D) g;
     GeneralPath coordinates = new GeneralPath();
-    GeneralPath divider = new GeneralPath();
     
     
     ////Origin
@@ -127,7 +138,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
         if(arr[i][j] != 0)
         {
           
-          g2d.setColor(shapeColors[(arr[i][j])]);
+          g2d.setColor(shapeColors[currentDifficulty][(arr[i][j])]);
           g2d.fillRect((i * 30) + 1, (j * 30) - 59, 29, 29);
         }
       }
@@ -141,20 +152,31 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
        setBackground(Color.BLACK);
     }
     
-    else {setBackground(shapeColors[0]);}
+    else {setBackground(shapeColors[currentDifficulty][0]);}
     
     //Draws out the preview info field and the next shape
-    g2d.setStroke(new BasicStroke(10));
-    divider.moveTo(306,0);
-    divider.lineTo(306,600);
-    g2d.setColor(Color.BLACK);
-    g2d.draw(divider);
     
-    g2d.setColor(Color.GRAY);
+    g2d.setColor(new Color(236, 234, 236));
     g2d.fillRect(305, 0, 195, 600);
     
     g2d.setColor(Color.BLACK);
     g2d.fillRect(325, 100, 155, 155);
+    
+    g2d.setColor(Color.BLACK);
+    g2d.setStroke(new BasicStroke(10));
+    g2d.drawLine(306, 0, 306, 600);
+    
+    g2d.setStroke(new BasicStroke(5));
+    g2d.drawLine(306, 350, 400, 350);
+    g2d.drawLine(306, 450, 425, 450);
+    g2d.drawLine(306, 550, 450, 550);
+    
+    g.setFont(new Font("default", Font.BOLD, 16));
+    g2d.drawString("Next Shape", 350, 95);
+    g2d.drawString("LvL: " + currentDifficulty, 320, 345);
+    g2d.drawString("Lines: " + totalLines, 320, 445);
+    g2d.drawString("Score: " + totalScore, 320, 545);
+
     
     drawPreview(g2d);
     
@@ -262,10 +284,12 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       {
         totalScore += lineValue[scoreCombo - 1] * (currentDifficulty + 1);
         lineCounter += scoreCombo;
+        totalLines += scoreCombo;
         
         if(lineCounter >= 10 && currentDifficulty != 11)
         {
           lineCounter = lineCounter % 10;
+          currentDifficulty++;
           
           timeUpdater = 300 - (currentDifficulty * 25);
           timeSwitch = true;
@@ -1389,7 +1413,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       shapeSpawn = false;
     }
     
-    g2d.setColor(shapeColors[shapeType + 1]);
+    g2d.setColor(shapeColors[currentDifficulty][shapeType + 1]);
     
     switch(shapeType)
       {
@@ -2164,7 +2188,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   public void drawPreview(Graphics2D g2d)
   {
      
-     g2d.setColor(shapeColors[nextShape + 1]);
+     g2d.setColor(shapeColors[currentDifficulty][nextShape + 1]);
      
      switch(nextShape) 
         { 
