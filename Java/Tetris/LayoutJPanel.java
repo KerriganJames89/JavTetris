@@ -11,6 +11,11 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.lang.Math;
 import java.awt.geom.Line2D;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.Integer;
+
 
 public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
 {
@@ -24,7 +29,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   private Random random = new Random(); 
   
   //Default game speed; as the player progresses, the speed at which the shapes fall increases
-  private Timer t = new Timer(500, this);
+  public Timer t = new Timer(500, this);
   private int timeUpdater = 500;
   private boolean timeSwitch = true;
   
@@ -97,9 +102,6 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   private Color shapeColors[][] = new Color[][] {LevelColor1, LevelColor2, LevelColor3, LevelColor4, LevelColor5,
   LevelColor6, LevelColor7, LevelColor8, LevelColor9, LevelColor1, LevelColor1};
   
-
-  
-  
   
   public void paintComponent( Graphics g) 
   {    
@@ -110,19 +112,20 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     double height = getHeight();
 
     addKeyListener(this);
-    requestFocus();
-    setFocusable(true);
+
     
     super.paintComponent( g );
     Graphics2D g2d = (Graphics2D) g;
     GeneralPath coordinates = new GeneralPath();
     
     
+    
+    
     ////Origin
-  //g2d.translate(0, 0);
-
-  //Scales to window size
-  //g2d.scale(width/300, height/600);
+    //g2d.translate(0, 0);
+  
+    //Scales to window size
+    //g2d.scale(width/300, height/600);
     
     //Draws board gridlines to Jpanel
     g2d.setStroke(new BasicStroke(1));
@@ -160,6 +163,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     //Draws current shapes to the JPanel and updates them every cycle
     drawShape(g2d);
     
+    //Changes background depending if player has lost or not
     if(loseCheck)
     {     
        setBackground(Color.BLACK);
@@ -168,7 +172,6 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     else {setBackground(shapeColors[currentDifficulty][0]);}
     
     //Draws out the preview info field and the next shape
-    
     g2d.setColor(new Color(236, 234, 236));
     g2d.fillRect(305, 0, 195, 600);
     
@@ -189,8 +192,6 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     g2d.drawString("LvL: " + currentDifficulty, 320, 345);
     g2d.drawString("Lines: " + totalLines, 320, 445);
     g2d.drawString("Score: " + totalScore, 320, 545);
-
-    
     drawPreview(g2d);
     
 
@@ -222,12 +223,39 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     //If losing condition was met, exit the game
     if(loseCheck)
     {     
+      //String score = totalScore.toString();
+      Integer TotalScore = new Integer(totalScore);
+      FileWriter fr = null;
+      try{
+        fr = new FileWriter("scores.txt", true);
+        fr.write("------------Score:  ");
+        fr.write(TotalScore.toString());
+      
+      }
+      catch(IOException ioex){
+      
+        ioex.printStackTrace();
+      
+      }
+      finally{
+      
+        try{
+          fr.close();
+        }
+        catch(IOException ioex){
+        
+          ioex.printStackTrace();
+        
+        }
+      
+      }
       
       t.stop();
+      setFocusable(false);
       return;
     }
 
-    
+    //Checks if shape is connected above another block or on the floor
     int check = placementCheck();
 
     if(check == 1)
@@ -271,6 +299,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
         }
       }
       
+      //Calculates score and evalutes difficulty
       if(scoreCombo > 0)
       {
         totalScore += lineValue[scoreCombo - 1] * (currentDifficulty + 1);
@@ -302,7 +331,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       }
         
       //print test
-      //printBoard();
+      printBoard();
         
       repaint();
       return;
@@ -2265,6 +2294,13 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       }
     }
     System.out.println();
+    System.out.println();
+  }
+  
+  //Stops timer; removing the components doesnt seem to stop the timer for some reason
+  public void timerStop()
+  {
+    t.stop();
   }
   
   public void keyReleased(KeyEvent e) 

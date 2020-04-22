@@ -15,12 +15,14 @@ public class TetrisHomePage extends JFrame implements ActionListener
 {
 
   //JMenu Play;
-  JButton start, scores, play, menu;
-  JTextArea wm, userName;
-  JTextField name;
-  URL imageurl = getClass().getResource("/Images/tetrisimg.png"); 
-  Image image = Toolkit.getDefaultToolkit().getImage(imageurl);
-  JLabel pic = new JLabel(new ImageIcon( image ));
+  private JButton start, scores, play, menu;
+  private JTextArea wm, userName;
+  private JTextField name;
+  private JPanel frontPage = new JPanel();
+  private JPanel fScores = new JPanel();
+  private LayoutJPanel layoutjpanel = new LayoutJPanel();
+  private JLabel playerText;
+  private JTextField playerName = new JTextField(20);
 
   TetrisHomePage (){
   
@@ -39,6 +41,8 @@ public class TetrisHomePage extends JFrame implements ActionListener
     wm = new JTextArea();
     wm.setBounds(0, 0, 400, 400);
     wm.setText("\n\n\n\n\t   Welcome to our Tetris Game\n\n\t   by  James Kerrigan\n\n\t               and\n\n\t        Samuel Machado");
+    setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+    
   
     
     //Play.addActionListener(this);
@@ -54,32 +58,18 @@ public class TetrisHomePage extends JFrame implements ActionListener
     menuBar.add(scores);
     setJMenuBar(menuBar);
     //add(wm);
-    
-    //setPreferredSize(new Dimension(500,625));
-    
-    //JPanel frontPage = new JPanel();
-    //add(frontPage);
-    setPreferredSize(new Dimension(500,625));
-    pack();
-    
-//    URL imageurl = getClass().getResource("/Images/tetrisimg.png"); 
-//    Image image = Toolkit.getDefaultToolkit().getImage(imageurl);
-//    JLabel pic = new JLabel(new ImageIcon( image ));
-//    pic.setBounds(0,0,image.getWidth(null),image.getHeight(null));
 
-    add(pic); 
     setPreferredSize(new Dimension(500,625));
     pack();
-    setLayout(null);
-    setFocusable(true);
     setVisible(true);
-    
-    setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+
+  mainMenu();
   }
   
   public void actionPerformed(ActionEvent e){
 
     getContentPane().removeAll();
+    layoutjpanel.timerStop();
   
     if(e.getActionCommand() == "Start"){
       
@@ -95,13 +85,31 @@ public class TetrisHomePage extends JFrame implements ActionListener
     }
   
     else if(e.getActionCommand() == "Play"){
-    
-     JFrame StartGame = new JFrame ("Start Game");
-      StartGame.add(userName);
-      StartGame.add(name);
-      //StartGame.add(play)
-      StartGame.setSize(400, 600);
-      StartGame.setVisible(true);
+//    
+//     JFrame StartGame = new JFrame ("Start Game");
+//      StartGame.add(userName);
+//      StartGame.add(name);
+//      //StartGame.add(play)
+//      StartGame.setSize(400, 600);
+//      StartGame.setVisible(true);
+//      
+//      JFrame frame = new JFrame( "Tetris");
+//
+//      frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+      
+
+      add( layoutjpanel );
+
+      setContentPane(layoutjpanel);
+      revalidate();
+
+      layoutjpanel.setPreferredSize(new Dimension(500,600));
+
+      setContentPane(layoutjpanel);
+
+      pack();
+
+      layoutjpanel.setFocusable(true);
       
     }
     
@@ -130,23 +138,22 @@ public class TetrisHomePage extends JFrame implements ActionListener
       
       }
     
-      JPanel fScores = new JPanel();
       JTextArea printScores = new JTextArea(allScores);
-      printScores.setBounds(0,0,500,600);
-      setContentPane(fScores);
+      printScores.setBounds(0,0,500,625);
+      add(fScores);
+      setContentPane( fScores );
       fScores.setSize(500,625);
       fScores.add(printScores);
-      fScores.setLayout(null);
       fScores.setVisible(true);
       fScores.setFocusable(true);
       revalidate();
       repaint();
+      pack();
     }
     
     else if(e.getActionCommand() == "Menu")
     {
-      add(pic);
-      repaint();
+      mainMenu();
     }
     
     else{
@@ -185,35 +192,7 @@ public class TetrisHomePage extends JFrame implements ActionListener
       
       }
       
-      JFrame frame = new JFrame( "Tetris");
 
-      frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-
-    
-
-        
-
-      LayoutJPanel layoutjpanel = new LayoutJPanel();
-      
-
-      add( layoutjpanel );
-
-      setContentPane(layoutjpanel);
-      revalidate();
-
-      layoutjpanel.setPreferredSize(new Dimension(500,600));
-
-      getContentPane().add( layoutjpanel );
-
-      pack();
-
-      setVisible( true );
-
-      setResizable(true);
-
-      setBackground(Color.GRAY);
-
-      layoutjpanel.setFocusable(true);
     
       /*JFrame frame = new JFrame( "Game");
       //frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
@@ -241,6 +220,25 @@ public class TetrisHomePage extends JFrame implements ActionListener
       frame.setVisible( true );*/
     
     }
+  }
+  
+  public void mainMenu()
+  {
+      URL imageurl = getClass().getResource("/Images/tetrisimg.png"); 
+      Image image = Toolkit.getDefaultToolkit().getImage(imageurl);
+      playerText = new JLabel("Enter Player Name: ");
+      JLabel pic = new JLabel(new ImageIcon( image ));
+      frontPage.add(playerText);
+      frontPage.add(playerName);
+      add(frontPage);
+      frontPage.setPreferredSize(new Dimension(500,625));
+      frontPage.add(pic);
+      setContentPane( frontPage );
+      frontPage.setFocusable(true);
+      frontPage.setVisible( true );
+      revalidate();
+      repaint();
+      pack();
   }
   
   public static void main(String args[])
