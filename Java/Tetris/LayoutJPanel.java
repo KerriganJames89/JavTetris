@@ -15,8 +15,8 @@ import java.awt.geom.Line2D;
 public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
 {
 
-  //General shape coordinates
-  private int x = 0, y = 0;
+  //Initial shape coordinates
+  private int x = 120, y = 0;
   
   //Preview shape coordinates
   private int x2 = 385, y2 = 205;
@@ -53,7 +53,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   private String shapeTransform = "DEFAULT";
   
   //GracePeriod gives the player time to move their shape when ontop of another shape; based on difficulty level
-  private int gracePeriod[] = new int[] {2, 2, 2, 2, 3, 3, 3, 4, 4, 6};
+  private int gracePeriod[] = new int[] {2, 2, 2, 2, 3, 3, 3, 4, 4, 6, 8};
   private int graceCounter = 2;
   
   //Prevents using key events between shape creation - 
@@ -67,22 +67,35 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
   private int arr[][] = new int[10][22];
   
   //Color Palette for each level
-  private Color LevelColor5[] = new Color[] {new Color(55, 56, 59), new Color(255, 213, 0), new Color(24, 227, 222),
+  private Color LevelColor1[] = new Color[] {new Color(55, 56, 59), new Color(255, 213, 0), new Color(24, 227, 222),
   new Color(116, 24, 227),new Color(227, 24, 24), new Color(58, 227, 24), new Color(227, 130, 24), new Color(24, 77, 227)};
   
-  private Color LevelColor2[] = new Color[] {new Color(85, 61, 99), new Color(234, 55, 136), new Color(176, 34, 140),
-  new Color(229, 107, 112),new Color(234, 55, 136), new Color(176, 34, 140), new Color(229, 107, 112), new Color(234, 55, 136)};
+  private Color LevelColor2[] = new Color[] {new Color(43, 45, 66), new Color(47, 73, 174), new Color(239, 35, 60), 
+  new Color(237, 242, 244), new Color(47, 73, 174), new Color(239, 35, 60), new Color(47, 73, 174), new Color(239, 35, 60)};
   
-  private Color LevelColor3[] = new Color[] {Color.GRAY, new Color(255, 136, 17), Color.WHITE, 
-  new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)}; 
-  
-  private Color LevelColor4[] = new Color[] {new Color(20, 52, 43), new Color(255, 87, 159), new Color(187, 223, 197), 
+  private Color LevelColor3[] = new Color[] {new Color(20, 52, 43), new Color(255, 87, 159), new Color(187, 223, 197), 
   new Color(255, 87, 159), new Color(96, 147, 93), new Color(187, 223, 197), new Color(255, 87, 159), new Color(96, 147, 93)}; 
   
-  private Color LevelColor1[] = new Color[] {new Color(46, 30, 15), new Color(162, 167, 158), new Color(167, 116, 100), 
-  new Color(136, 41, 47), new Color(162, 167, 158), new Color(167, 116, 100), new Color(136, 41, 47), new Color(167, 116, 100)}; 
+  private Color LevelColor4[] = new Color[] {Color.GRAY, new Color(255, 136, 17), Color.WHITE, 
+  new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17), Color.WHITE, new Color(255, 136, 17)}; 
   
-  private Color shapeColors[][] = new Color[][] {LevelColor1, LevelColor2, LevelColor3, LevelColor4, LevelColor5};
+  private Color LevelColor5[] = new Color[] {new Color(12, 42, 95), new Color(252, 255, 75), new Color(255, 173, 5), 
+  new Color(124, 175, 196), new Color(89, 149, 237), new Color(252, 255, 75), new Color(255, 173, 5), new Color(89, 149, 237)};
+  
+  private Color LevelColor6[] = new Color[] {new Color(110, 37, 5), new Color(162, 167, 158), new Color(167, 116, 100), 
+  new Color(199, 91, 99), new Color(162, 167, 158), new Color(167, 116, 100), new Color(199, 91, 99), new Color(167, 116, 100)}; 
+  
+  private Color LevelColor7[] = new Color[] {new Color(85, 61, 99), new Color(234, 55, 136), new Color(176, 34, 140),
+  new Color(229, 107, 112),new Color(234, 55, 136), new Color(176, 34, 140), new Color(229, 107, 112), new Color(234, 55, 136)};
+  
+  private Color LevelColor8[] = new Color[] {new Color(41, 47, 54), new Color(255, 107, 107), new Color(78, 205, 196), 
+  new Color(255, 107, 107), new Color(255, 255, 255), new Color(78, 205, 196), new Color(255, 107, 107), new Color(255, 255, 255)};
+  
+  private Color LevelColor9[] = new Color[] {new Color(82, 34, 28), new Color(149, 10, 17), new Color(240, 102, 37), 
+  new Color(245, 185, 29), new Color(247, 240, 2), new Color(149, 10, 17), new Color(240, 102, 37), new Color(245, 185, 29)};
+  
+  private Color shapeColors[][] = new Color[][] {LevelColor1, LevelColor2, LevelColor3, LevelColor4, LevelColor5,
+  LevelColor6, LevelColor7, LevelColor8, LevelColor9, LevelColor1, LevelColor1};
   
 
   
@@ -201,19 +214,6 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       timeSwitch = false;
     }
   }
-  
-  public void printBoard()
-  {
-    for(int i = 0; i < 22; i++)
-    {
-    System.out.println();
-      for(int j = 0; j < 10; j++)
-      {
-        System.out.print(arr[j][i] + " ");
-      }
-    }
-    System.out.println();
-  }
  
    //Action event that triggers through a timer cycle
   public void actionPerformed(ActionEvent e)
@@ -222,18 +222,9 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     //If losing condition was met, exit the game
     if(loseCheck)
     {     
-
-     try 
-      {  
-        TimeUnit.MILLISECONDS.sleep(10000);
-      } 
       
-      catch (InterruptedException r)
-      {
-        
-      }
-      
-      System.exit(0);
+      t.stop();
+      return;
     }
 
     
@@ -250,7 +241,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       shapeDelay = false;
       
       //Coordinate reset for next shape
-      x = 0;
+      x = 120;
       y = 0;
        
       //Checks rows to see if they are completed; increases player score and squashes board if so
@@ -286,7 +277,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
         lineCounter += scoreCombo;
         totalLines += scoreCombo;
         
-        if(lineCounter >= 10 && currentDifficulty != 11)
+        if(lineCounter >= 10 && currentDifficulty != 10)
         {
           lineCounter = lineCounter % 10;
           currentDifficulty++;
@@ -311,7 +302,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       }
         
       //print test
-      printBoard();
+      //printBoard();
         
       repaint();
       return;
@@ -2185,6 +2176,7 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
     return 2;
   }
   
+  //Draws preview field shapes
   public void drawPreview(Graphics2D g2d)
   {
      
@@ -2261,12 +2253,19 @@ public class LayoutJPanel extends JPanel implements ActionListener, KeyListener
       }
   }
 
-      
-//  private void gameOver(Graphics2D g2d, int c)
-//  {
-//   
-//  }
-
+  //Prints board to console    
+  public void printBoard()
+  {
+    for(int i = 0; i < 22; i++)
+    {
+    System.out.println();
+      for(int j = 0; j < 10; j++)
+      {
+        System.out.print(arr[j][i] + " ");
+      }
+    }
+    System.out.println();
+  }
   
   public void keyReleased(KeyEvent e) 
   {
